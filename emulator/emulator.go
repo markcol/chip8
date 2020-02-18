@@ -115,6 +115,10 @@ func (e *Emulator) runCode() {
 		x := (opcode & 0x0F00) >> 8
 		y := (opcode & 0x00F0) >> 4
 		e.v[x] |= e.v[y]
+	case opcode&0xF00F == 0x8002: // AND Vx,Vy
+		x := (opcode & 0x0F00) >> 8
+		y := (opcode & 0x00F0) >> 4
+		e.v[x] &= e.v[y]
 	case opcode&0xF000 == 0xA000: // LD I,addr
 		addr := opcode & 0x0FFF
 		e.i = addr
