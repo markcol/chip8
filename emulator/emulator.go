@@ -86,8 +86,11 @@ func (e *Emulator) runCode() {
 	case opcode&0xF000 == 0x2000: // CALL
 		e.call(opcode & 0x0FFF)
 	case opcode&0xF000 == 0xA000: // LD I, addr
-		addr := (opcode & 0x0FFF)
+		addr := opcode & 0x0FFF
 		e.i = addr
+	case opcode&0xF0FF == 0xF007: // LD ST, Vx
+		max := (opcode & 0x0F00) >> 8
+		e.v[max] = e.dt
 	case opcode&0xF0FF == 0xF018: // LD ST, Vx
 		max := (opcode & 0x0F00) >> 8
 		e.st = e.v[max]

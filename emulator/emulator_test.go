@@ -214,6 +214,29 @@ func TestLdiOpcode(t *testing.T) {
 	}
 }
 
+func TestLdVxDt(t *testing.T) {
+	e := &Emulator{}
+
+	r := byte(6)
+	rval := byte(0x17)
+	opcode := uint16(0xF007) | uint16(r)<<8
+	e.WriteOpcode(opcode, 0x000)
+
+	e.dt = rval
+	if e.v[r] != 0 {
+		t.Errorf("V%1X = %#02x, expected %#02x", r, e.v[r], 0)
+	}
+	if e.dt != rval {
+		t.Errorf("DT = %#02x, expected %#02x", e.dt, rval)
+	}
+
+	e.runCode()
+
+	if e.v[r] != rval {
+		t.Errorf("V%1X = %#02x, expected %#02x", r, e.v[r], rval)
+	}
+}
+
 func TestLdStVx(t *testing.T) {
 	e := &Emulator{}
 
