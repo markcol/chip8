@@ -115,7 +115,7 @@ func TestGetOpcode(t *testing.T) {
 	}
 }
 
-func TestRetOpcode(t *testing.T) {
+func TestRet(t *testing.T) {
 	e := &Emulator{}
 
 	addr := uint16(0x100 & 0x0FFF)
@@ -150,7 +150,7 @@ func TestRetOpcode(t *testing.T) {
 	}
 }
 
-func TestJpOpcode(t *testing.T) {
+func TestJp(t *testing.T) {
 	e := &Emulator{}
 
 	addr := uint16(0x0135 & 0x0FFF)
@@ -168,7 +168,7 @@ func TestJpOpcode(t *testing.T) {
 	}
 }
 
-func TestCallOpcode(t *testing.T) {
+func TestCall(t *testing.T) {
 	e := &Emulator{}
 
 	addr := uint16(0x135 & 0x0FFF)
@@ -196,7 +196,7 @@ func TestCallOpcode(t *testing.T) {
 	}
 }
 
-func TestSeVxBbEqualOpcode(t *testing.T) {
+func TestSeVxBbEqual(t *testing.T) {
 	e := &Emulator{}
 
 	b := byte(0x7F)
@@ -217,7 +217,7 @@ func TestSeVxBbEqualOpcode(t *testing.T) {
 	}
 }
 
-func TestSeVxBbNotEqualOpcode(t *testing.T) {
+func TestSeVxBbNotEqual(t *testing.T) {
 	e := &Emulator{}
 
 	b := 0x7F
@@ -238,7 +238,7 @@ func TestSeVxBbNotEqualOpcode(t *testing.T) {
 	}
 }
 
-func TestSneVxBbEqualOpcode(t *testing.T) {
+func TestSneVxBbEqual(t *testing.T) {
 	e := &Emulator{}
 
 	b := byte(0x7F)
@@ -259,7 +259,7 @@ func TestSneVxBbEqualOpcode(t *testing.T) {
 	}
 }
 
-func TestSneVxBbNotEqualOpcode(t *testing.T) {
+func TestSneVxBbNotEqual(t *testing.T) {
 	e := &Emulator{}
 
 	b := 0x7F
@@ -280,7 +280,7 @@ func TestSneVxBbNotEqualOpcode(t *testing.T) {
 	}
 }
 
-func TestSeVxVyEqualOpcode(t *testing.T) {
+func TestSeVxVyEqual(t *testing.T) {
 	e := &Emulator{}
 
 	b := byte(0x7F)
@@ -306,7 +306,7 @@ func TestSeVxVyEqualOpcode(t *testing.T) {
 	}
 }
 
-func TestSeVxVyNotEqualOpcode(t *testing.T) {
+func TestSeVxVyNotEqual(t *testing.T) {
 	e := &Emulator{}
 
 	b := byte(0x7F)
@@ -331,7 +331,7 @@ func TestSeVxVyNotEqualOpcode(t *testing.T) {
 	}
 }
 
-func TestLdVxByteOpcode(t *testing.T) {
+func TestLdVxByte(t *testing.T) {
 	e := &Emulator{}
 
 	r := byte(6)
@@ -350,7 +350,7 @@ func TestLdVxByteOpcode(t *testing.T) {
 	}
 }
 
-func TestAddVxByteOpcode(t *testing.T) {
+func TestAddVxByte(t *testing.T) {
 	e := &Emulator{}
 
 	r := byte(6)
@@ -372,7 +372,7 @@ func TestAddVxByteOpcode(t *testing.T) {
 	}
 }
 
-func TestLdVxVyOpcode(t *testing.T) {
+func TestLdVxVy(t *testing.T) {
 	e := &Emulator{}
 
 	x := byte(6)
@@ -393,6 +393,34 @@ func TestLdVxVyOpcode(t *testing.T) {
 
 	if e.v[x] != e.v[y] {
 		t.Errorf("V%1X = %#02x, expected %#02x", x, e.v[x], e.v[y])
+	}
+}
+
+func TestOrVxVy(t *testing.T) {
+	e := &Emulator{}
+
+	x := byte(6)
+	y := byte(7)
+	b1 := byte(0x17)
+	b2 := byte(0xFF)
+	exp := b1 | b2
+
+	opcode := uint16(0x8001) | uint16(x)<<8 | uint16(y)<<4
+	e.WriteOpcode(opcode, 0x000)
+
+	e.v[x] = b1
+	e.v[y] = b2
+	if e.v[x] != b1 {
+		t.Errorf("V%1X = %#02x, expected %#02x", x, e.v[x], b1)
+	}
+	if e.v[y] != b2 {
+		t.Errorf("V%1X = %#02x, expected %#02x", y, e.v[y], b2)
+	}
+
+	e.runCode()
+
+	if e.v[x] != exp {
+		t.Errorf("V%1X = %#02x, expected %#02x", x, e.v[x], exp)
 	}
 }
 
@@ -468,7 +496,7 @@ func TestAddIVx(t *testing.T) {
 	}
 }
 
-func TestLnOpcode(t *testing.T) {
+func TestLnIVx(t *testing.T) {
 	e := &Emulator{}
 
 	addr := uint16(0x700)
@@ -512,7 +540,7 @@ func TestLnOpcode(t *testing.T) {
 	}
 }
 
-func TestLdOpcode(t *testing.T) {
+func TestLdVxI(t *testing.T) {
 	e := &Emulator{}
 
 	addr := uint16(0x0700)
