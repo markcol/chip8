@@ -238,47 +238,6 @@ func TestSeVxBbNotEqualOpcode(t *testing.T) {
 	}
 }
 
-func TestLdiOpcode(t *testing.T) {
-	e := &Emulator{}
-
-	addr := uint16(0x135 & 0x0FFF)
-	opcode := uint16(0xA000 | addr)
-	e.WriteOpcode(opcode, 0x000)
-
-	if e.i != 0 {
-		t.Errorf("I = %#04x, expected %#04x", e.i, 0)
-	}
-
-	e.runCode()
-
-	if e.i != addr {
-		t.Errorf("I = %#04x, expected %#04x", e.i, addr)
-	}
-}
-
-func TestLdVxDt(t *testing.T) {
-	e := &Emulator{}
-
-	r := byte(6)
-	rval := byte(0x17)
-	opcode := uint16(0xF007) | uint16(r)<<8
-	e.WriteOpcode(opcode, 0x000)
-
-	e.dt = rval
-	if e.v[r] != 0 {
-		t.Errorf("V%1X = %#02x, expected %#02x", r, e.v[r], 0)
-	}
-	if e.dt != rval {
-		t.Errorf("DT = %#02x, expected %#02x", e.dt, rval)
-	}
-
-	e.runCode()
-
-	if e.v[r] != rval {
-		t.Errorf("V%1X = %#02x, expected %#02x", r, e.v[r], rval)
-	}
-}
-
 func TestSneVxBbEqualOpcode(t *testing.T) {
 	e := &Emulator{}
 
@@ -369,6 +328,48 @@ func TestSeVxVyNotEqualOpcode(t *testing.T) {
 
 	if e.pc != epc {
 		t.Errorf("PC = %#04x, expected %#04x", e.pc, epc)
+	}
+}
+
+func TestLdVxByteOpcode(t *testing.T) {
+	e := &Emulator{}
+
+	r := byte(6)
+	b := byte(0x17)
+	opcode := uint16(0x6000 | uint16(r)<<8 | uint16(b))
+	e.WriteOpcode(opcode, 0x000)
+
+	if e.v[r] != 0 {
+		t.Errorf("V%1X = %#02x, expected %#02x", r, e.v[r], 0)
+	}
+
+	e.runCode()
+
+	if e.v[r] != b {
+		t.Errorf("V%1X = %#02x, expected %#02x", r, e.v[r], b)
+	}
+}
+
+func TestLdVxDt(t *testing.T) {
+	e := &Emulator{}
+
+	r := byte(6)
+	rval := byte(0x17)
+	opcode := uint16(0xF007) | uint16(r)<<8
+	e.WriteOpcode(opcode, 0x000)
+
+	e.dt = rval
+	if e.v[r] != 0 {
+		t.Errorf("V%1X = %#02x, expected %#02x", r, e.v[r], 0)
+	}
+	if e.dt != rval {
+		t.Errorf("DT = %#02x, expected %#02x", e.dt, rval)
+	}
+
+	e.runCode()
+
+	if e.v[r] != rval {
+		t.Errorf("V%1X = %#02x, expected %#02x", r, e.v[r], rval)
 	}
 }
 

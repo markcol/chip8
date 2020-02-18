@@ -101,12 +101,15 @@ func (e *Emulator) runCode() {
 		if e.v[x] == e.v[y] {
 			e.pc += 2
 		}
+	case opcode&0xF000 == 0x6000: // LD Vx,byte
+		r := (opcode & 0x0F00) >> 8
+		e.v[r] = byte(opcode)
 	case opcode&0xF000 == 0xA000: // LD I,addr
 		addr := opcode & 0x0FFF
 		e.i = addr
 	case opcode&0xF0FF == 0xF007: // LD ST,Vx
-		max := (opcode & 0x0F00) >> 8
-		e.v[max] = e.dt
+		r := (opcode & 0x0F00) >> 8
+		e.v[r] = e.dt
 	case opcode&0xF0FF == 0xF018: // LD ST,Vx
 		r := (opcode & 0x0F00) >> 8
 		e.st = e.v[r]
