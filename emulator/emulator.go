@@ -83,6 +83,12 @@ func (e *Emulator) runCode() {
 		e.pc = opcode & 0x0FFF
 	case opcode&0xF000 == 0x2000: // CALL
 		e.call(opcode & 0x0FFF)
+	case opcode&0xF000 == 0xA000: // LD I, addr
+		addr := (opcode & 0x0FFF)
+		e.i = addr
+	case opcode&0xF0FF == 0xF01E: // ADD I, Vx
+		max := (opcode & 0x0F00) >> 8
+		e.i += uint16(e.registers[max])
 	case opcode&0xF0FF == 0xF055: // LD[I], Vx
 		max := (opcode & 0x0F00) >> 8
 		if e.i+max > uint16(len(e.mem)) {
@@ -90,6 +96,14 @@ func (e *Emulator) runCode() {
 		}
 		for i := uint16(0); i < max; i++ {
 			e.mem[e.i+i] = e.registers[i]
+		}
+	case opcode&0xF0FF == 0xF065: // LD Vx, [I]
+		max := (opcode & 0x0F00) >> 8
+		if e.i+max > uint16(len(e.mem)) {
+			panic("Address out of range")
+		}
+		for i := uint16(0); i < max; i++ {
+			e.registers[i] = e.mem[e.i+i]
 		}
 	default:
 	}
@@ -130,15 +144,15 @@ func (e *Emulator) Write(addr uint16, bytes []byte) {
 	if max >= MemorySize {
 		max = MemorySize
 	}
-	for i := beg; i < max; i++ {
-		e.mem[i] = bytes[i]
+	for i := 0; i < len(bytes); i++ {
+		e.mem[addr+uint16(i)] = bytes[i]
 	}
 }
 
 // Read returns a slice of bytes from memory.
-func (e *Emulator) Read(addr uint16, len uint) []byte {
+func (e *Emulator) Read(addr uint16, l uint) []byte {
 	start := int(addr)
-	end := int(addr) + int(len)
+	end := int(addr) + int(l)
 	if start >= MemorySize {
 		return []byte{}
 	}
@@ -146,8 +160,8 @@ func (e *Emulator) Read(addr uint16, len uint) []byte {
 		end = MemorySize
 	}
 	bytes := make([]byte, end-start)
-	for i := start; i < end; i++ {
-		bytes[i] = e.mem[i]
+	for i := 0; i < int(l); i++ {
+		bytes[i] = e.mem[start+i]
 	}
 	return bytes
 }

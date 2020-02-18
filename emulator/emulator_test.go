@@ -115,101 +115,6 @@ func TestGetOpcode(t *testing.T) {
 	}
 }
 
-func TestLnOpcode(t *testing.T) {
-	e := &Emulator{}
-	addr := uint16(0x700)
-	l := uint16(0x0F)
-	regs := [16]byte{0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0A, 0x0B, 0x0C, 0x0D, 0x0E, 0x0F, 0x10}
-	e.registers = regs
-	e.i = addr
-	e.Write(0x0000, []byte{0xFF, 0x55})
-
-	// ensure that the target area is set
-	if e.i != addr {
-		t.Errorf("e.i = %#04x, expected %#04x", e.i, addr)
-	}
-
-	// ensure that target area is empty
-	for i := uint16(0); i < uint16(l); i++ {
-		if e.mem[e.i+i] != 0 {
-			t.Errorf("mem[%#04x] = %#2x, expected 0x00", i, e.registers[i])
-		}
-	}
-
-	// ensure that registers are set
-	for i := uint16(0); i < uint16(len(regs)); i++ {
-		if e.registers[i] != regs[i] {
-			t.Errorf("register[%#02x] = %#02x, expected %#02x", i, e.registers[i], regs[i])
-		}
-	}
-
-	e.runCode()
-
-	// ensure that target area is set to the register value
-	for i := uint16(0); i < uint16(l); i++ {
-		if e.mem[e.i+i] != e.registers[i] {
-			t.Errorf("mem[%#04x] = %#2x, expected %#02x", e.i+i, e.mem[e.i+i], regs[i])
-		}
-	}
-	if e.mem[e.i+l] != 0 {
-		t.Errorf("mem[%#04x] = %#2x, expected %#02x", e.i+l, e.mem[e.i+l], 0)
-	}
-
-	// ensure that I still points to the initial address
-	if e.i != addr {
-		t.Errorf("e.i = %#04x, expected %#04x", e.i, addr)
-	}
-}
-
-func TestJpOpcode(t *testing.T) {
-	e := &Emulator{}
-
-	addr := uint16(0x0135 & 0x0FFF)
-	opcode := 0x1000 | addr
-	e.WriteOpcode(opcode, uint16(0x0000))
-
-	if e.pc != 0 {
-		t.Errorf("pc = %#04x, expected %#04x", e.pc, 0)
-	}
-
-	e.runCode()
-
-	if e.pc != addr {
-		t.Errorf("pc = %#04x, expected %#04x", e.pc, addr)
-	}
-}
-
-func TestCallOpcode(t *testing.T) {
-	e := &Emulator{}
-
-	addr := uint16(0x135 & 0x0FFF)
-	opcode := uint16(0x2000 | addr)
-	e.WriteOpcode(opcode, 0x000)
-
-	oldpc := e.pc + 2
-	if e.pc != 0 {
-		t.Errorf("pc = %#04x, expected %#04x", e.pc, 0)
-	}
-
-	if e.sp != 0 {
-		t.Errorf("sp = %#02x, expected %#02x", e.sp, 0)
-	}
-
-	e.runCode()
-
-	if e.pc != addr {
-		t.Errorf("pc = %#04x, expected %#04x", e.pc, addr)
-	}
-
-	if e.sp != 1 {
-		t.Errorf("sp = %#02x, expected %#02x", e.sp, 1)
-	}
-
-	if e.stack[e.sp] != oldpc {
-		t.Errorf("stack[%#02x] = %#04x, expected %#04x", e.sp, e.stack[e.sp], oldpc)
-	}
-}
-
 func TestRetOpcode(t *testing.T) {
 	e := &Emulator{}
 
@@ -242,5 +147,180 @@ func TestRetOpcode(t *testing.T) {
 
 	if e.sp != 0 {
 		t.Errorf("sp = %#02x, expected %#02x", e.sp, 0)
+	}
+}
+
+func TestJpOpcode(t *testing.T) {
+	e := &Emulator{}
+
+	addr := uint16(0x0135 & 0x0FFF)
+	opcode := 0x1000 | addr
+	e.WriteOpcode(opcode, uint16(0x0000))
+
+	if e.pc != 0 {
+		t.Errorf("pc = %#04x, expected %#04x", e.pc, 0)
+	}
+
+	e.runCode()
+
+	if e.pc != addr {
+		t.Errorf("pc = %#04x, expected %#04x", e.pc, addr)
+	}
+}
+
+func TestCallOpcode(t *testing.T) {
+	e := &Emulator{}
+
+	addr := uint16(0x135 & 0x0FFF)
+	opcode := uint16(0x2000 | addr)
+	e.WriteOpcode(opcode, 0x000)
+
+	if e.pc != 0 {
+		t.Errorf("pc = %#04x, expected %#04x", e.pc, 0)
+	}
+	if e.sp != 0 {
+		t.Errorf("sp = %#02x, expected %#02x", e.sp, 0)
+	}
+
+	oldPc := e.pc + 2
+	e.runCode()
+
+	if e.pc != addr {
+		t.Errorf("pc = %#04x, expected %#04x", e.pc, addr)
+	}
+	if e.sp != 1 {
+		t.Errorf("sp = %#02x, expected %#02x", e.sp, 1)
+	}
+	if e.stack[e.sp] != oldPc {
+		t.Errorf("stack[%#02x] = %#04x, expected %#04x", e.sp, e.stack[e.sp], oldPc)
+	}
+}
+
+func TestLdiOpcode(t *testing.T) {
+	e := &Emulator{}
+
+	addr := uint16(0x135 & 0x0FFF)
+	opcode := uint16(0xA000 | addr)
+	e.WriteOpcode(opcode, 0x000)
+
+	if e.i != 0 {
+		t.Errorf("I = %#04x, expected %#04x", e.i, 0)
+	}
+
+	e.runCode()
+
+	if e.i != addr {
+		t.Errorf("e.i = %#04x, expected %#04x", e.i, addr)
+	}
+}
+
+func TestAddIVx(t *testing.T) {
+	e := &Emulator{}
+
+	r := byte(6)
+	rval := byte(0x17)
+	opcode := uint16(0xF01E) | uint16(r)<<8
+	e.WriteOpcode(opcode, 0x000)
+	ival := uint16(0x1700)
+	newval := ival + uint16(rval)
+
+	e.registers[r] = rval
+	e.i = ival
+	if e.i != ival {
+		t.Errorf("I = %#04x, expected %#04x", e.i, ival)
+	}
+	if e.registers[r] != rval {
+		t.Errorf("V[%#02x] = %#02x, expected %#02x", r, e.registers[r], rval)
+	}
+
+	e.runCode()
+
+	if e.i != newval {
+		t.Errorf("e.i = %#04x, expected %#04x", e.i, newval)
+	}
+}
+
+func TestLnOpcode(t *testing.T) {
+	e := &Emulator{}
+
+	addr := uint16(0x700)
+	l := uint16(0x0F)
+	regs := [16]byte{0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0A, 0x0B, 0x0C, 0x0D, 0x0E, 0x0F, 0x10}
+	e.registers = regs
+	e.i = addr
+	e.WriteOpcode(0xFF55, 0x0000)
+
+	// ensure that the target area is set
+	if e.i != addr {
+		t.Errorf("e.i = %#04x, expected %#04x", e.i, addr)
+	}
+	// ensure that target area is empty
+	for i := uint16(0); i < uint16(l); i++ {
+		if e.mem[e.i+i] != 0 {
+			t.Errorf("mem[%#04x] = %#2x, expected 0x00", i, e.registers[i])
+		}
+	}
+	// ensure that registers are set
+	for i := uint16(0); i < uint16(len(regs)); i++ {
+		if e.registers[i] != regs[i] {
+			t.Errorf("register[%#02x] = %#02x, expected %#02x", i, e.registers[i], regs[i])
+		}
+	}
+
+	e.runCode()
+
+	// ensure that target area is set to the register value
+	for i := uint16(0); i < uint16(l); i++ {
+		if e.mem[e.i+i] != e.registers[i] {
+			t.Errorf("mem[%#04x] = %#2x, expected %#02x", e.i+i, e.mem[e.i+i], regs[i])
+		}
+	}
+	if e.mem[e.i+l] != 0 {
+		t.Errorf("mem[%#04x] = %#2x, expected %#02x", e.i+l, e.mem[e.i+l], 0)
+	}
+	// ensure that I still points to the initial address
+	if e.i != addr {
+		t.Errorf("e.i = %#04x, expected %#04x", e.i, addr)
+	}
+}
+
+func TestLdOpcode(t *testing.T) {
+	e := &Emulator{}
+
+	addr := uint16(0x0700)
+	l := uint16(0x0F)
+	regs := [16]byte{0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0A, 0x0B, 0x0C, 0x0D, 0x0E, 0x0F, 0x10}
+	e.i = addr
+	opcode := 0xF065 | ((l << 8) & 0x0F00)
+	e.WriteOpcode(opcode, 0x0000)
+	e.Write(addr, regs[0:l+1])
+
+	// ensure that the target area is set
+	if e.i != addr {
+		t.Errorf("e.i = %#04x, expected %#04x", e.i, addr)
+	}
+	for i := uint16(0); i < uint16(l); i++ {
+		if e.registers[i] != 0 {
+			t.Errorf("registers[%#02x] = %#2x, expected 0x00", i, e.registers[i])
+		}
+	}
+	// ensure that memory is set
+	for i := uint16(0); i < uint16(len(regs)); i++ {
+		if e.mem[addr+i] != regs[i] {
+			t.Errorf("mem[%#04x] = %#02x, expected %#02x", addr+i, e.mem[addr+i], regs[i])
+		}
+	}
+
+	e.runCode()
+
+	// ensure that target area is set to the register value
+	for i := uint16(0); i < uint16(l); i++ {
+		if e.registers[i] != e.mem[e.i+i] {
+			t.Errorf("registers[%#02x] = %#2x, expected %#02x", i, e.registers[i], e.mem[e.i+i])
+		}
+	}
+	// ensure that I still points to the initial address
+	if e.i != addr {
+		t.Errorf("e.i = %#04x, expected %#04x", e.i, addr)
 	}
 }
