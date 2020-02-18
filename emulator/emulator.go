@@ -123,6 +123,16 @@ func (e *Emulator) runCode() {
 		x := (opcode & 0x0F00) >> 8
 		y := (opcode & 0x00F0) >> 4
 		e.v[x] ^= e.v[y]
+	case opcode&0xF00F == 0x8004: // ADD Vx,Vy
+		x := (opcode & 0x0F00) >> 8
+		y := (opcode & 0x00F0) >> 4
+		exp := uint16(e.v[x]) + uint16(e.v[y])
+		e.v[x] = byte(exp)
+		if exp > 0x00FF {
+			e.v[0xF] = 1
+		} else {
+			e.v[0xF] = 0
+		}
 	case opcode&0xF000 == 0xA000: // LD I,addr
 		addr := opcode & 0x0FFF
 		e.i = addr

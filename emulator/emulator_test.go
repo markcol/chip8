@@ -480,6 +480,43 @@ func TestXorVxVy(t *testing.T) {
 	}
 }
 
+func TestAddVxVy(t *testing.T) {
+	e := &Emulator{}
+
+	x := byte(6)
+	y := byte(7)
+	b1 := byte(0x17)
+	b2 := byte(0xFF)
+	exp := uint16(b1) + uint16(b2)
+
+	opcode := uint16(0x8004) | uint16(x)<<8 | uint16(y)<<4
+	e.WriteOpcode(opcode, 0x000)
+
+	e.v[x] = b1
+	e.v[y] = b2
+	if e.v[x] != b1 {
+		t.Errorf("V%1X = %#02x, expected %#02x", x, e.v[x], b1)
+	}
+	if e.v[y] != b2 {
+		t.Errorf("V%1X = %#02x, expected %#02x", y, e.v[y], b2)
+	}
+
+	e.runCode()
+
+	if e.v[x] != byte(exp) {
+		t.Errorf("V%1X = %#02x, expected %#02x", x, e.v[x], exp)
+	}
+	if exp > 0x00FF {
+		if e.v[0xF] != 1 {
+			t.Errorf("V%1X = %#02x, expected %#02x", 0xF, e.v[0xF], 1)
+		}
+	} else {
+		if e.v[0xF] != 0 {
+			t.Errorf("V%1X = %#02x, expected %#02x", 0xF, e.v[0xF], 0)
+		}
+	}
+}
+
 func TestLdVxDt(t *testing.T) {
 	e := &Emulator{}
 
