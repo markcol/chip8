@@ -196,6 +196,48 @@ func TestCallOpcode(t *testing.T) {
 	}
 }
 
+func TestSeVxBbEqualOpcode(t *testing.T) {
+	e := &Emulator{}
+
+	b := byte(0x7F)
+	r := byte(6)
+	opcode := uint16(0x3000 | uint16(r)<<8 | uint16(b))
+	e.WriteOpcode(opcode, 0x000)
+
+	opc := e.pc
+	e.v[r] = b
+	if e.v[r] != b {
+		t.Errorf("V%1X = %#02x, expected %#02x", r, e.v[r], b)
+	}
+
+	e.runCode()
+
+	if e.pc != opc+4 {
+		t.Errorf("PC = %#04x, expected %#04x", e.pc, opc+4)
+	}
+}
+
+func TestSeVxBbNotEqualOpcode(t *testing.T) {
+	e := &Emulator{}
+
+	b := 0x7F
+	r := byte(6)
+	opcode := uint16(0x3000 | uint16(r)<<8 | uint16(b))
+	e.WriteOpcode(opcode, 0x000)
+
+	opc := e.pc
+	e.v[r] = 0x01
+	if e.v[r] != 0x01 {
+		t.Errorf("V%1X = %#02x, expected %#02x", r, e.v[r], 0x01)
+	}
+
+	e.runCode()
+
+	if e.pc != opc+2 {
+		t.Errorf("PC = %#04x, expected %#04x", e.pc, opc+2)
+	}
+}
+
 func TestLdiOpcode(t *testing.T) {
 	e := &Emulator{}
 

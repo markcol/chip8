@@ -85,6 +85,11 @@ func (e *Emulator) runCode() {
 		e.pc = opcode & 0x0FFF
 	case opcode&0xF000 == 0x2000: // CALL
 		e.call(opcode & 0x0FFF)
+	case opcode&0xF000 == 0x3000: // SE vx, byte
+		r := (opcode & 0x0F00) >> 8
+		if e.v[r] == byte(opcode) {
+			e.pc += 2
+		}
 	case opcode&0xF000 == 0xA000: // LD I, addr
 		addr := opcode & 0x0FFF
 		e.i = addr
@@ -92,11 +97,11 @@ func (e *Emulator) runCode() {
 		max := (opcode & 0x0F00) >> 8
 		e.v[max] = e.dt
 	case opcode&0xF0FF == 0xF018: // LD ST, Vx
-		max := (opcode & 0x0F00) >> 8
-		e.st = e.v[max]
+		r := (opcode & 0x0F00) >> 8
+		e.st = e.v[r]
 	case opcode&0xF0FF == 0xF01E: // ADD I, Vx
-		max := (opcode & 0x0F00) >> 8
-		e.i += uint16(e.v[max])
+		r := (opcode & 0x0F00) >> 8
+		e.i += uint16(e.v[r])
 	case opcode&0xF0FF == 0xF055: // LD[I], Vx
 		max := (opcode & 0x0F00) >> 8
 		if e.i+max > uint16(len(e.mem)) {
