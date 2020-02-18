@@ -452,6 +452,34 @@ func TestAndVxVy(t *testing.T) {
 	}
 }
 
+func TestXorVxVy(t *testing.T) {
+	e := &Emulator{}
+
+	x := byte(6)
+	y := byte(7)
+	b1 := byte(0x17)
+	b2 := byte(0xFF)
+	exp := b1 ^ b2
+
+	opcode := uint16(0x8003) | uint16(x)<<8 | uint16(y)<<4
+	e.WriteOpcode(opcode, 0x000)
+
+	e.v[x] = b1
+	e.v[y] = b2
+	if e.v[x] != b1 {
+		t.Errorf("V%1X = %#02x, expected %#02x", x, e.v[x], b1)
+	}
+	if e.v[y] != b2 {
+		t.Errorf("V%1X = %#02x, expected %#02x", y, e.v[y], b2)
+	}
+
+	e.runCode()
+
+	if e.v[x] != exp {
+		t.Errorf("V%1X = %#02x, expected %#02x", x, e.v[x], exp)
+	}
+}
+
 func TestLdVxDt(t *testing.T) {
 	e := &Emulator{}
 
@@ -479,22 +507,22 @@ func TestLdStVx(t *testing.T) {
 	e := &Emulator{}
 
 	r := byte(6)
-	rval := byte(0x17)
+	val := byte(0x17)
 	opcode := uint16(0xF018) | uint16(r)<<8
 	e.WriteOpcode(opcode, 0x000)
 
-	e.v[r] = rval
+	e.v[r] = val
 	if e.st != 0 {
 		t.Errorf("ST = %#02x, expected %#02x", e.st, 0)
 	}
-	if e.v[r] != rval {
-		t.Errorf("V%1X = %#02x, expected %#02x", r, e.v[r], rval)
+	if e.v[r] != val {
+		t.Errorf("V%1X = %#02x, expected %#02x", r, e.v[r], val)
 	}
 
 	e.runCode()
 
-	if e.st != rval {
-		t.Errorf("ST = %#02x, expected %#02x", e.i, rval)
+	if e.st != val {
+		t.Errorf("ST = %#02x, expected %#02x", e.i, val)
 	}
 }
 
