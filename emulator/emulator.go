@@ -95,6 +95,12 @@ func (e *Emulator) runCode() {
 		if e.v[r] != byte(opcode) {
 			e.pc += 2
 		}
+	case opcode&0xF000 == 0x5000: // SNE Vx,byte
+		x := (opcode & 0x0F00) >> 8
+		y := (opcode & 0x00F0) >> 4
+		if e.v[x] == e.v[y] {
+			e.pc += 2
+		}
 	case opcode&0xF000 == 0xA000: // LD I,addr
 		addr := opcode & 0x0FFF
 		e.i = addr
