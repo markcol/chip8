@@ -32,6 +32,7 @@ type Emulator struct {
 	registers [Registers]byte
 	stack     [StackSize]uint16
 	pc        uint16
+	i         uint16
 	sp        byte
 	timerChan chan bool
 }
@@ -62,27 +63,56 @@ func startTicker(d time.Duration, f func()) chan bool {
 
 // Start starts execution of the emulator.
 func (e *Emulator) Start() {
-	e.startTimer()
-}
-
-// start the background clock timer
-func (e *Emulator) startTimer() {
-	if e.timerChan == nil {
-		e.timerChan = startTicker(TimerFrequency, e.timerCallback)
-	}
-}
-
-// stop the background clock timer
-func (e *Emulator) stopTimer() {
-	close(e.timerChan)
-	// Let the goroutine finish
-	time.Sleep(2 * TimerFrequency)
-	e.timerChan = nil
+	// TODO(markcol): Enable the timer
+	// e.startTimer()
 }
 
 // Stop stops execution of the emulator.
 func (e *Emulator) Stop() {
 	e.stopTimer()
+}
+
+func (e *Emulator) runCode() {
+	opcode := e.GetOpcode()
+	switch {
+	case opcode == 0x00E0: // CLS
+		e.ClearDisplay()
+	case opcode == 0x00EE: // RET
+		e.ret()
+	case opcode&0xF000 == 0x1000: // JP
+		e.pc = opcode & 0x0FFF
+	case opcode&0xF000 == 0x2000: // CALL
+		e.call(opcode & 0x0FFF)
+	case opcode&0xF0FF == 0xF055: // LD[I], Vx
+		max := (opcode & 0x0F00) >> 8
+		if e.i+max > uint16(len(e.mem)) {
+			panic("Address out of range")
+		}
+		for i := uint16(0); i < max; i++ {
+			e.mem[e.i+i] = e.registers[i]
+		}
+	default:
+	}
+
+}
+
+// WriteOpcode writes an opcode at the given address
+func (e *Emulator) WriteOpcode(opcode uint16, addr uint16) {
+	if (addr + 1) > MemorySize {
+		panic("Address out of range")
+	}
+	e.mem[addr] = byte(opcode >> 8)
+	e.mem[addr+1] = byte(opcode)
+}
+
+// ReadOpcode reads an opcode from the given address
+func (e *Emulator) ReadOpcode(addr uint16) uint16 {
+	if (addr + 1) > MemorySize {
+		panic("Address out of range")
+	}
+	op := uint16(e.mem[addr])<<8 | uint16(e.mem[addr+1])
+	//op |=  uint16(e.mem[addr + 1]) & 0x00FF
+	return op
 }
 
 // Beep sounds the speaker.
@@ -139,7 +169,7 @@ func (e *Emulator) ClearDisplay() {
 
 func (e *Emulator) call(a uint16) {
 	if e.sp >= StackSize {
-		panic("Emulator tack overflow")
+		panic("Emulator stack overflow")
 	}
 	if a >= MemorySize {
 		panic("Emulator address out of bounds")
@@ -155,6 +185,21 @@ func (e *Emulator) ret() {
 	}
 	e.pc = e.stack[e.sp]
 	e.sp--
+}
+
+// start the background clock timer
+func (e *Emulator) startTimer() {
+	if e.timerChan == nil {
+		e.timerChan = startTicker(TimerFrequency, e.timerCallback)
+	}
+}
+
+// stop the background clock timer
+func (e *Emulator) stopTimer() {
+	close(e.timerChan)
+	// Let the goroutine finish
+	time.Sleep(2 * TimerFrequency)
+	e.timerChan = nil
 }
 
 func (e *Emulator) timerCallback() {
