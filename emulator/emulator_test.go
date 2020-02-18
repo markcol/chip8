@@ -7,9 +7,9 @@ import (
 // Test that the register values default to zero at startup.
 func TestRegistersZeroAtStartup(t *testing.T) {
 	e := &Emulator{}
-	for i := 0; i < len(e.registers); i++ {
-		if e.registers[i] != 0 {
-			t.Errorf("register[%d] = %#2x, expected 0x00", i, e.registers[i])
+	for i := 0; i < len(e.v); i++ {
+		if e.v[i] != 0 {
+			t.Errorf("V%1X = %#2x, expected 0x00", i, e.v[i])
 		}
 	}
 }
@@ -91,7 +91,7 @@ func TestGetOpcode(t *testing.T) {
 	e.Write(0x0000, m)
 
 	if e.pc != 0x0 {
-		t.Errorf("pc = %#04x, expected 0x0000", e.pc)
+		t.Errorf("PC = %#04x, expected 0x0000", e.pc)
 	}
 
 	// make sure opcode is read in big-endian form
@@ -102,7 +102,7 @@ func TestGetOpcode(t *testing.T) {
 
 	// make sure PC advanced
 	if e.pc != 0x0002 {
-		t.Errorf("pc = %#04x, expected 0x0002", e.pc)
+		t.Errorf("PC = %#04x, expected 0x0002", e.pc)
 	}
 
 	o = e.GetOpcode()
@@ -111,7 +111,7 @@ func TestGetOpcode(t *testing.T) {
 	}
 
 	if e.pc != 0x0004 {
-		t.Errorf("pc = %#04x, expected 0x0004", e.pc)
+		t.Errorf("PC = %#04x, expected 0x0004", e.pc)
 	}
 }
 
@@ -128,11 +128,11 @@ func TestRetOpcode(t *testing.T) {
 	e.stack[e.sp] = oldAddr
 
 	if e.pc != addr {
-		t.Errorf("pc = %#04x, expected %#04x", e.pc, addr)
+		t.Errorf("PC = %#04x, expected %#04x", e.pc, addr)
 	}
 
 	if e.sp != 1 {
-		t.Errorf("sp = %#02x, expected %#02x", e.sp, 1)
+		t.Errorf("SP = %#02x, expected %#02x", e.sp, 1)
 	}
 
 	if e.stack[e.sp] != oldAddr {
@@ -142,11 +142,11 @@ func TestRetOpcode(t *testing.T) {
 	e.runCode()
 
 	if e.pc != oldAddr {
-		t.Errorf("pc = %#04x, expected %#04x", e.pc, oldAddr)
+		t.Errorf("PC = %#04x, expected %#04x", e.pc, oldAddr)
 	}
 
 	if e.sp != 0 {
-		t.Errorf("sp = %#02x, expected %#02x", e.sp, 0)
+		t.Errorf("SP = %#02x, expected %#02x", e.sp, 0)
 	}
 }
 
@@ -158,13 +158,13 @@ func TestJpOpcode(t *testing.T) {
 	e.WriteOpcode(opcode, uint16(0x0000))
 
 	if e.pc != 0 {
-		t.Errorf("pc = %#04x, expected %#04x", e.pc, 0)
+		t.Errorf("PC = %#04x, expected %#04x", e.pc, 0)
 	}
 
 	e.runCode()
 
 	if e.pc != addr {
-		t.Errorf("pc = %#04x, expected %#04x", e.pc, addr)
+		t.Errorf("PC = %#04x, expected %#04x", e.pc, addr)
 	}
 }
 
@@ -176,20 +176,20 @@ func TestCallOpcode(t *testing.T) {
 	e.WriteOpcode(opcode, 0x000)
 
 	if e.pc != 0 {
-		t.Errorf("pc = %#04x, expected %#04x", e.pc, 0)
+		t.Errorf("PC = %#04x, expected %#04x", e.pc, 0)
 	}
 	if e.sp != 0 {
-		t.Errorf("sp = %#02x, expected %#02x", e.sp, 0)
+		t.Errorf("SP = %#02x, expected %#02x", e.sp, 0)
 	}
 
 	oldPc := e.pc + 2
 	e.runCode()
 
 	if e.pc != addr {
-		t.Errorf("pc = %#04x, expected %#04x", e.pc, addr)
+		t.Errorf("PC = %#04x, expected %#04x", e.pc, addr)
 	}
 	if e.sp != 1 {
-		t.Errorf("sp = %#02x, expected %#02x", e.sp, 1)
+		t.Errorf("SP = %#02x, expected %#02x", e.sp, 1)
 	}
 	if e.stack[e.sp] != oldPc {
 		t.Errorf("stack[%#02x] = %#04x, expected %#04x", e.sp, e.stack[e.sp], oldPc)
@@ -210,7 +210,30 @@ func TestLdiOpcode(t *testing.T) {
 	e.runCode()
 
 	if e.i != addr {
-		t.Errorf("e.i = %#04x, expected %#04x", e.i, addr)
+		t.Errorf("I = %#04x, expected %#04x", e.i, addr)
+	}
+}
+
+func TestLdStVx(t *testing.T) {
+	e := &Emulator{}
+
+	r := byte(6)
+	rval := byte(0x17)
+	opcode := uint16(0xF018) | uint16(r)<<8
+	e.WriteOpcode(opcode, 0x000)
+
+	e.v[r] = rval
+	if e.st != 0 {
+		t.Errorf("ST = %#02x, expected %#02x", e.st, 0)
+	}
+	if e.v[r] != rval {
+		t.Errorf("V%1X = %#02x, expected %#02x", r, e.v[r], rval)
+	}
+
+	e.runCode()
+
+	if e.st != rval {
+		t.Errorf("ST = %#02x, expected %#02x", e.i, rval)
 	}
 }
 
@@ -224,19 +247,19 @@ func TestAddIVx(t *testing.T) {
 	ival := uint16(0x1700)
 	newval := ival + uint16(rval)
 
-	e.registers[r] = rval
+	e.v[r] = rval
 	e.i = ival
 	if e.i != ival {
 		t.Errorf("I = %#04x, expected %#04x", e.i, ival)
 	}
-	if e.registers[r] != rval {
-		t.Errorf("V[%#02x] = %#02x, expected %#02x", r, e.registers[r], rval)
+	if e.v[r] != rval {
+		t.Errorf("V%1X = %#02x, expected %#02x", r, e.v[r], rval)
 	}
 
 	e.runCode()
 
 	if e.i != newval {
-		t.Errorf("e.i = %#04x, expected %#04x", e.i, newval)
+		t.Errorf("I = %#04x, expected %#04x", e.i, newval)
 	}
 }
 
@@ -246,24 +269,24 @@ func TestLnOpcode(t *testing.T) {
 	addr := uint16(0x700)
 	l := uint16(0x0F)
 	regs := [16]byte{0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0A, 0x0B, 0x0C, 0x0D, 0x0E, 0x0F, 0x10}
-	e.registers = regs
+	e.v = regs
 	e.i = addr
 	e.WriteOpcode(0xFF55, 0x0000)
 
 	// ensure that the target area is set
 	if e.i != addr {
-		t.Errorf("e.i = %#04x, expected %#04x", e.i, addr)
+		t.Errorf("I = %#04x, expected %#04x", e.i, addr)
 	}
 	// ensure that target area is empty
 	for i := uint16(0); i < uint16(l); i++ {
 		if e.mem[e.i+i] != 0 {
-			t.Errorf("mem[%#04x] = %#2x, expected 0x00", i, e.registers[i])
+			t.Errorf("mem[%#04x] = %#2x, expected 0x00", i, e.v[i])
 		}
 	}
-	// ensure that registers are set
+	// ensure that v are set
 	for i := uint16(0); i < uint16(len(regs)); i++ {
-		if e.registers[i] != regs[i] {
-			t.Errorf("register[%#02x] = %#02x, expected %#02x", i, e.registers[i], regs[i])
+		if e.v[i] != regs[i] {
+			t.Errorf("V%1X = %#02x, expected %#02x", i, e.v[i], regs[i])
 		}
 	}
 
@@ -271,7 +294,7 @@ func TestLnOpcode(t *testing.T) {
 
 	// ensure that target area is set to the register value
 	for i := uint16(0); i < uint16(l); i++ {
-		if e.mem[e.i+i] != e.registers[i] {
+		if e.mem[e.i+i] != e.v[i] {
 			t.Errorf("mem[%#04x] = %#2x, expected %#02x", e.i+i, e.mem[e.i+i], regs[i])
 		}
 	}
@@ -280,7 +303,7 @@ func TestLnOpcode(t *testing.T) {
 	}
 	// ensure that I still points to the initial address
 	if e.i != addr {
-		t.Errorf("e.i = %#04x, expected %#04x", e.i, addr)
+		t.Errorf("I = %#04x, expected %#04x", e.i, addr)
 	}
 }
 
@@ -297,11 +320,11 @@ func TestLdOpcode(t *testing.T) {
 
 	// ensure that the target area is set
 	if e.i != addr {
-		t.Errorf("e.i = %#04x, expected %#04x", e.i, addr)
+		t.Errorf("I = %#04x, expected %#04x", e.i, addr)
 	}
 	for i := uint16(0); i < uint16(l); i++ {
-		if e.registers[i] != 0 {
-			t.Errorf("registers[%#02x] = %#2x, expected 0x00", i, e.registers[i])
+		if e.v[i] != 0 {
+			t.Errorf("V%1X = %#2x, expected 0x00", i, e.v[i])
 		}
 	}
 	// ensure that memory is set
@@ -315,12 +338,12 @@ func TestLdOpcode(t *testing.T) {
 
 	// ensure that target area is set to the register value
 	for i := uint16(0); i < uint16(l); i++ {
-		if e.registers[i] != e.mem[e.i+i] {
-			t.Errorf("registers[%#02x] = %#2x, expected %#02x", i, e.registers[i], e.mem[e.i+i])
+		if e.v[i] != e.mem[e.i+i] {
+			t.Errorf("V%1X = %#2x, expected %#02x", i, e.v[i], e.mem[e.i+i])
 		}
 	}
 	// ensure that I still points to the initial address
 	if e.i != addr {
-		t.Errorf("e.i = %#04x, expected %#04x", e.i, addr)
+		t.Errorf("I = %#04x, expected %#04x", e.i, addr)
 	}
 }

@@ -18,7 +18,7 @@ const (
 	// DisplayWidth holds the number of columns available in the display.
 	DisplayWidth = 64
 
-	// Registers holds the number of registers available in the Emulator.
+	// Registers holds the number of v available in the Emulator.
 	Registers = 16
 
 	// StackSize holds the size of the stack in the Emulator (max call depth).
@@ -29,11 +29,13 @@ const (
 type Emulator struct {
 	mem       [MemorySize]byte
 	display   [DisplayWidth * DisplayHeight]byte
-	registers [Registers]byte
+	v         [Registers]byte
 	stack     [StackSize]uint16
 	pc        uint16
 	i         uint16
 	sp        byte
+	st        byte
+	dt        byte
 	timerChan chan bool
 }
 
@@ -86,16 +88,19 @@ func (e *Emulator) runCode() {
 	case opcode&0xF000 == 0xA000: // LD I, addr
 		addr := (opcode & 0x0FFF)
 		e.i = addr
+	case opcode&0xF0FF == 0xF018: // LD ST, Vx
+		max := (opcode & 0x0F00) >> 8
+		e.st = e.v[max]
 	case opcode&0xF0FF == 0xF01E: // ADD I, Vx
 		max := (opcode & 0x0F00) >> 8
-		e.i += uint16(e.registers[max])
+		e.i += uint16(e.v[max])
 	case opcode&0xF0FF == 0xF055: // LD[I], Vx
 		max := (opcode & 0x0F00) >> 8
 		if e.i+max > uint16(len(e.mem)) {
 			panic("Address out of range")
 		}
 		for i := uint16(0); i < max; i++ {
-			e.mem[e.i+i] = e.registers[i]
+			e.mem[e.i+i] = e.v[i]
 		}
 	case opcode&0xF0FF == 0xF065: // LD Vx, [I]
 		max := (opcode & 0x0F00) >> 8
@@ -103,7 +108,7 @@ func (e *Emulator) runCode() {
 			panic("Address out of range")
 		}
 		for i := uint16(0); i < max; i++ {
-			e.registers[i] = e.mem[e.i+i]
+			e.v[i] = e.mem[e.i+i]
 		}
 	default:
 	}
