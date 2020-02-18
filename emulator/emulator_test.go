@@ -32,6 +32,8 @@ func TestReadWrite(t *testing.T) {
 	}
 }
 
+// Make sure that GetOpcode returns 16-bit opcodes in big-endian order and that
+// the PC advances by two with each read of the opcode.
 func TestGetOpcode(t *testing.T) {
 	e := &Emulator{}
 
@@ -48,10 +50,19 @@ func TestGetOpcode(t *testing.T) {
 		t.Errorf("opcode = %#04x, expected 0x0102", o)
 	}
 
+	if e.pc != 0x0002 {
+		t.Errorf("pc = %#04x, expected 0x0002", e.pc)
+	}
+
 	o = e.GetOpcode()
 	if o != 0x0304 {
 		t.Errorf("opcode = %#04x, expected 0x0304", 0)
 	}
+
+	if e.pc != 0x0004 {
+		t.Errorf("pc = %#04x, expected 0x0004", e.pc)
+	}
+
 }
 
 func TestRegistersZeroAtStartup(t *testing.T) {
