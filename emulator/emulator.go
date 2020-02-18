@@ -85,24 +85,29 @@ func (e *Emulator) runCode() {
 		e.pc = opcode & 0x0FFF
 	case opcode&0xF000 == 0x2000: // CALL
 		e.call(opcode & 0x0FFF)
-	case opcode&0xF000 == 0x3000: // SE vx, byte
+	case opcode&0xF000 == 0x3000: // SE Vx,byte
 		r := (opcode & 0x0F00) >> 8
 		if e.v[r] == byte(opcode) {
 			e.pc += 2
 		}
-	case opcode&0xF000 == 0xA000: // LD I, addr
+	case opcode&0xF000 == 0x4000: // SNE Vx,byte
+		r := (opcode & 0x0F00) >> 8
+		if e.v[r] != byte(opcode) {
+			e.pc += 2
+		}
+	case opcode&0xF000 == 0xA000: // LD I,addr
 		addr := opcode & 0x0FFF
 		e.i = addr
-	case opcode&0xF0FF == 0xF007: // LD ST, Vx
+	case opcode&0xF0FF == 0xF007: // LD ST,Vx
 		max := (opcode & 0x0F00) >> 8
 		e.v[max] = e.dt
-	case opcode&0xF0FF == 0xF018: // LD ST, Vx
+	case opcode&0xF0FF == 0xF018: // LD ST,Vx
 		r := (opcode & 0x0F00) >> 8
 		e.st = e.v[r]
-	case opcode&0xF0FF == 0xF01E: // ADD I, Vx
+	case opcode&0xF0FF == 0xF01E: // ADD I,Vx
 		r := (opcode & 0x0F00) >> 8
 		e.i += uint16(e.v[r])
-	case opcode&0xF0FF == 0xF055: // LD[I], Vx
+	case opcode&0xF0FF == 0xF055: // LD [I],Vx
 		max := (opcode & 0x0F00) >> 8
 		if e.i+max > uint16(len(e.mem)) {
 			panic("Address out of range")
@@ -110,7 +115,7 @@ func (e *Emulator) runCode() {
 		for i := uint16(0); i < max; i++ {
 			e.mem[e.i+i] = e.v[i]
 		}
-	case opcode&0xF0FF == 0xF065: // LD Vx, [I]
+	case opcode&0xF0FF == 0xF065: // LD Vx,[I]
 		max := (opcode & 0x0F00) >> 8
 		if e.i+max > uint16(len(e.mem)) {
 			panic("Address out of range")
