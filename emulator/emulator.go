@@ -104,6 +104,9 @@ func (e *Emulator) runCode() {
 	case opcode&0xF000 == 0x6000: // LD Vx,byte
 		r := (opcode & 0x0F00) >> 8
 		e.v[r] = byte(opcode)
+	case opcode&0xF000 == 0x7000: // ADD Vx,byte
+		r := (opcode & 0x0F00) >> 8
+		e.v[r] += byte(opcode)
 	case opcode&0xF000 == 0xA000: // LD I,addr
 		addr := opcode & 0x0FFF
 		e.i = addr
